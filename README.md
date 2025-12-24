@@ -1,3 +1,12 @@
+# 文本文件转md后端
+# 缺点
+* 仅可转换文本内容内容；
+* 格式可能丢失；
+
+# 优点
+* 可转换任意文件为md；
+* 启动方便：docker compose一键启动（镜像1G左右）；
+
 # MarkItDown FastAPI
 
 🚀 A simplified and containerized version of [MarkItDown](https://github.com/microsoft/markitdown) running as a FastAPI service, with a RESTful API for file-to-Markdown conversion.
@@ -20,10 +29,11 @@ http://localhost:5000/docs
 > Make sure the app is running using Docker or FastAPI directly.
 
 ## 📦 Getting Started
+复制.env.example为.env
 ```bash
 git clone https://github.com/Elkhn/markitdown-fastapi.git
 cd markitdown-fastapi
-docker-compose up --build
+docker compose up -d --build
 ```
 
 ## Credits & Inspiration
