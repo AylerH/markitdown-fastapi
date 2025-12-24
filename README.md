@@ -1,15 +1,29 @@
 # 文本文件转md后端
 
-# 缺点
+## 缺点
 * 仅可转换文本内容内容；
 * 格式可能丢失；
 
-# 优点
+## 优点
 * 可转换任意文件为md；
 * 启动方便：docker compose一键启动（镜像1G左右）；
 
-# 分支说明
-见：分支说明.md
+## 多分支说明
+详：分支说明.md
+```
+backend:仅后端分支;
+main:全栈分支
+```
+
+## 目录树结构
+my_project/
+├── app/
+│   ├── app.py             <-- 后端逻辑
+│   └── static/            <-- 新建文件夹
+│       └── index.html     <-- 前端页面
+├── requirements.txt
+├── Dockerfile
+└── docker-compose.yml
 
 # MarkItDown FastAPI
 

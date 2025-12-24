@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>MarkItDown 多文件转换</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drag-active { border-color: #2563eb; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        <h1 class="text-3xl font-black text-center text-slate-800 mb-8">MarkItDown 批量转换</h1>
+        
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+            <!-- 核心：点击和拖拽区域 -->
+            <div id="dropZone" onclick="document.getElementById('fileInput').click()" 
+                 class="border-4 border-dashed border-slate-200 rounded-xl py-16 text-center cursor-pointer hover:bg-slate-50 transition-all">
+                <p class="text-xl text-slate-600 font-medium">点击此处 或 拖拽文件/文件夹到这里</p>
+                <p class="text-slate-400 mt-2">支持 PDF, Word, Excel, PPT, TXT, 图片, 音频</p>
+            </div>
+
+            <div class="flex gap-4 mt-6 justify-center">
+                <input type="file" id="fileInput" class="hidden" multiple>
+                <input type="file" id="folderInput" class="hidden" webkitdirectory directory>
+                <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700">选择多个文件</button>
+                <button onclick="document.getElementById('folderInput').click()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700">选择整个文件夹</button>
+            </div>
+
+            <div id="resultArea" class="mt-8 hidden">
+                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">处理状态</h3>
+                <div id="taskList" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const folderInput = document.getElementById('folderInput');
+        const dropZone = document.getElementById('dropZone');
+        const taskList = document.getElementById('taskList');
+
+        // 拖拽逻辑
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); };
+        dropZone.ondragleave = () => dropZone.classList.remove('drag-active');
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-active');
+            handleUpload(e.dataTransfer.files);
+        };
+
+        fileInput.onchange = (e) => handleUpload(e.target.files);
+        folderInput.onchange = (e) => handleUpload(e.target.files);
+
+        async function handleUpload(files) {
+            if (!files.length) return;
+            document.getElementById('resultArea').classList.remove('hidden');
+
+            const formData = new FormData();
+            for (let f of files) {
+                formData.append('files', f);
+                const id = 't-' + Math.random().toString(36).slice(2, 7);
+                const div = document.createElement('div');
+                div.id = id;
+                div.className = "flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-100";
+                div.innerHTML = `<span class="truncate max-w-md">${f.name}</span><span class="status text-blue-500 font-bold text-sm">排队中...</span>`;
+                div.dataset.filename = f.name;
+                taskList.prepend(div);
+            }
+
+            try {
+                const res = await fetch('/convert-multiple', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                data.results.forEach(item => {
+                    const row = Array.from(taskList.children).find(el => el.dataset.filename === item.filename);
+                    if (!row) return;
+                    const status = row.querySelector('.status');
+                    if (item.status === 'success') {
+                        row.className = "flex justify-between items-center p-3 bg-green-50 rounded border border-green-100 text-green-700";
+                        status.innerHTML = `<a href="${item.download_url}" class="bg-green-600 text-white px-3 py-1 rounded text-xs">下载 MD</a>`;
+                    } else {
+                        row.className = "flex justify-between items-center p-3 bg-red-50 rounded border border-red-100 text-red-700";
+                        status.innerText = "失败";
+                        row.title = item.message;
+                    }
+                });
+            } catch (e) {
+                alert("上传失败，请检查网络");
+            }
+        }
+    </script>
+</body>
+</html>

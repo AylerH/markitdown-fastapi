@@ -1,16 +1,14 @@
-    
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - .env
+    build: .
     restart: always
-    image: markitdown
     container_name: markitdown
     volumes:
-      - ./:/app
+      - .:/app
     ports:
       - "5000:5000"
+    environment:
+      - EXIFTOOL_PATH=/usr/bin/exiftool
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+    # 强制指定启动路径，app.app:app 表示查找 app 文件夹下的 app.py 里的 app 对象
     command: ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
