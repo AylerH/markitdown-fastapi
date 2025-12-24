@@ -2,93 +2,133 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>MarkItDown 多文件转换</title>
+    <title>MarkItDown - 任务管理转换器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .drag-active { border-color: #2563eb; background-color: #f0f9ff; }
+        .drag-active { border-color: #3b82f6; background-color: #eff6ff; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-    <div class="max-w-4xl mx-auto py-10 px-4">
-        <h1 class="text-3xl font-black text-center text-slate-800 mb-8">MarkItDown 批量转换</h1>
-        
-        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-            <!-- 核心：点击和拖拽区域 -->
-            <div id="dropZone" onclick="document.getElementById('fileInput').click()" 
-                 class="border-4 border-dashed border-slate-200 rounded-xl py-16 text-center cursor-pointer hover:bg-slate-50 transition-all">
-                <p class="text-xl text-slate-600 font-medium">点击此处 或 拖拽文件/文件夹到这里</p>
-                <p class="text-slate-400 mt-2">支持 PDF, Word, Excel, PPT, TXT, 图片, 音频</p>
-            </div>
-
-            <div class="flex gap-4 mt-6 justify-center">
-                <input type="file" id="fileInput" class="hidden" multiple>
-                <input type="file" id="folderInput" class="hidden" webkitdirectory directory>
-                <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700">选择多个文件</button>
-                <button onclick="document.getElementById('folderInput').click()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700">选择整个文件夹</button>
-            </div>
-
-            <div id="resultArea" class="mt-8 hidden">
-                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">处理状态</h3>
-                <div id="taskList" class="space-y-2"></div>
-            </div>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+    <div class="max-w-5xl mx-auto py-10 px-4">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-black">File2Md-Markown文件转换平台（提取文本内容）</h1>
+            <button onclick="clearAll()" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition">清空全部任务</button>
         </div>
+
+        <!-- 配置与上传区 -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border mb-8">
+            <div class="flex flex-wrap gap-4 items-end mb-6">
+                <div class="flex-1 min-w-[240px]">
+                    <label class="block text-sm font-bold text-slate-500 mb-1">目标任务（输入或选择已有）</label>
+                    <input type="text" id="taskName" list="taskListData" value="default" 
+                           class="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    <datalist id="taskListData"></datalist>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition">选择文件</button>
+                    <button onclick="document.getElementById('folderInput').click()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition">上传文件夹</button>
+                </div>
+            </div>
+
+            <!-- 点击和拖拽二合一区域 -->
+            <div id="dropZone" onclick="document.getElementById('fileInput').click()" 
+                 class="border-4 border-dashed border-slate-100 rounded-xl py-12 text-center cursor-pointer hover:border-blue-300 hover:bg-slate-50 transition-all">
+                <p class="text-slate-400 font-medium">点击此处 或 将文件/文件夹拖拽到这里</p>
+            </div>
+            
+            <input type="file" id="fileInput" class="hidden" multiple>
+            <input type="file" id="folderInput" class="hidden" webkitdirectory directory>
+        </div>
+
+        <!-- 任务展示区 -->
+        <div id="taskContainer" class="space-y-6"></div>
     </div>
 
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const folderInput = document.getElementById('folderInput');
-        const dropZone = document.getElementById('dropZone');
-        const taskList = document.getElementById('taskList');
+        const taskContainer = document.getElementById('taskContainer');
+        const taskNameInput = document.getElementById('taskName');
+        const taskListData = document.getElementById('taskListData');
 
-        // 拖拽逻辑
-        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); };
-        dropZone.ondragleave = () => dropZone.classList.remove('drag-active');
-        dropZone.ondrop = (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-active');
-            handleUpload(e.dataTransfer.files);
-        };
+        window.onload = loadTasks;
 
-        fileInput.onchange = (e) => handleUpload(e.target.files);
-        folderInput.onchange = (e) => handleUpload(e.target.files);
+        async function loadTasks() {
+            const res = await fetch('/list-tasks');
+            const tasks = await res.json();
+            
+            // 更新任务选择列表
+            taskListData.innerHTML = tasks.map(t => `<option value="${t.name}">`).join('');
+            
+            taskContainer.innerHTML = '';
+            tasks.forEach(task => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl shadow-sm border overflow-hidden";
+                const hasFiles = task.files.length > 0;
+                
+                card.innerHTML = `
+                    <div class="bg-slate-50 px-6 py-4 flex justify-between items-center border-b">
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg font-black text-slate-700">${task.name}</span>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${task.files.length} Files</span>
+                        </div>
+                        <div class="flex gap-4">
+                            ${hasFiles ? `<button onclick="downloadZip('${task.name}')" class="text-blue-600 text-sm font-bold hover:underline">批量下载(ZIP)</button>` : ''}
+                            <button onclick="deleteTask('${task.name}')" class="text-red-500 text-sm font-bold hover:underline">清空该任务</button>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        ${hasFiles ? `
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                ${task.files.map(f => `
+                                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                        <span class="text-sm truncate flex-1 font-medium text-slate-600" title="${f.name}">${f.name}</span>
+                                        <div class="flex gap-3 ml-4 border-l pl-4 border-slate-200">
+                                            <a href="/download-single/${task.name}/${f.name}" class="text-blue-500 text-xs font-bold hover:text-blue-700">下载</a>
+                                            <button onclick="deleteFile('${task.name}','${f.name}')" class="text-red-400 text-xs font-bold hover:text-red-600">删除</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p class="text-slate-300 text-sm italic text-center py-4">该任务下暂无已转换的文件</p>'}
+                    </div>
+                `;
+                taskContainer.appendChild(card);
+            });
+        }
 
         async function handleUpload(files) {
             if (!files.length) return;
-            document.getElementById('resultArea').classList.remove('hidden');
-
+            const name = taskNameInput.value.trim() || 'default';
             const formData = new FormData();
-            for (let f of files) {
-                formData.append('files', f);
-                const id = 't-' + Math.random().toString(36).slice(2, 7);
-                const div = document.createElement('div');
-                div.id = id;
-                div.className = "flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-100";
-                div.innerHTML = `<span class="truncate max-w-md">${f.name}</span><span class="status text-blue-500 font-bold text-sm">排队中...</span>`;
-                div.dataset.filename = f.name;
-                taskList.prepend(div);
-            }
+            formData.append('task_name', name);
+            for (let f of files) formData.append('files', f);
+
+            taskNameInput.disabled = true;
+            const originalVal = taskNameInput.value;
+            taskNameInput.value = "正在转换中，请稍候...";
 
             try {
-                const res = await fetch('/convert-multiple', { method: 'POST', body: formData });
-                const data = await res.json();
-                
-                data.results.forEach(item => {
-                    const row = Array.from(taskList.children).find(el => el.dataset.filename === item.filename);
-                    if (!row) return;
-                    const status = row.querySelector('.status');
-                    if (item.status === 'success') {
-                        row.className = "flex justify-between items-center p-3 bg-green-50 rounded border border-green-100 text-green-700";
-                        status.innerHTML = `<a href="${item.download_url}" class="bg-green-600 text-white px-3 py-1 rounded text-xs">下载 MD</a>`;
-                    } else {
-                        row.className = "flex justify-between items-center p-3 bg-red-50 rounded border border-red-100 text-red-700";
-                        status.innerText = "失败";
-                        row.title = item.message;
-                    }
-                });
+                const res = await fetch('/convert', { method: 'POST', body: formData });
+                await loadTasks();
             } catch (e) {
-                alert("上传失败，请检查网络");
+                alert("转换请求失败");
+            } finally {
+                taskNameInput.disabled = false;
+                taskNameInput.value = name;
             }
         }
+
+        document.getElementById('fileInput').onchange = (e) => handleUpload(e.target.files);
+        document.getElementById('folderInput').onchange = (e) => handleUpload(e.target.files);
+        
+        const dz = document.getElementById('dropZone');
+        dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('drag-active'); };
+        dz.ondragleave = () => dz.classList.remove('drag-active');
+        dz.ondrop = (e) => { e.preventDefault(); dz.classList.remove('drag-active'); handleUpload(e.dataTransfer.files); };
+
+        async function deleteFile(t, f) { if(confirm('确定删除该文件？')) { await fetch(`/delete-file/${t}/${f}`, {method: 'DELETE'}); loadTasks(); } }
+        async function deleteTask(t) { if(confirm(`确定清空任务 [${t}]？`)) { await fetch(`/delete-task/${t}`, {method: 'DELETE'}); loadTasks(); } }
+        async function clearAll() { if(confirm('警告：将物理删除所有任务下的文件！')) { await fetch('/clear-all', {method: 'DELETE'}); loadTasks(); } }
+        function downloadZip(t) { window.location.href = `/download-zip/${t}`; }
     </script>
 </body>
 </html>

@@ -1,0 +1,7 @@
+# 端口配置
+INNER_PORT=5003
+OUTER_PORT=5003
+
+# 环境变量
+EXIFTOOL_PATH=/usr/bin/exiftool
+FFMPEG_PATH=/usr/bin/ffmpeg
