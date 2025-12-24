@@ -10,9 +10,19 @@ github:https://github.com/AylerH/markitdown-fastapi
 * 可转换任意文件为md；
 * 启动方便：docker compose一键启动（镜像1G左右）；
 
-# 部署提示
+# 正式部署提示
+```
+git clone https://github.com/AylerH/markitdown-fastapi.git
+cd markitdown-fastapi
+cp .env\ copy .env
+docker-compose up --build -d
+```
+
+思路：
+```
 复制.env copy为.env
 完成文件配置后，仅需运行 `docker-compose up --build -d`，即可在 `OUTER_PORT` 定义的端口（看.env copy）开始使用。
+```
 
 # 网页访问
 前端网页：
