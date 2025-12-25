@@ -1,6 +1,8 @@
 # File2Md-Markown文件转换平台（提取文本内容）
 ## 概览
 github:https://github.com/AylerH/markitdown-fastapi
+## 功能
+将任意文件转为md文件（仅保留文本呢内容）
 
 ## 缺点
 * 仅可转换文本内容内容；
